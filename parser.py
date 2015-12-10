@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import requests
 import bs4
 import sys
@@ -8,6 +10,8 @@ import datetime
 
 import rechtspraak
 
+from settings import DATA_PATH
+
 URL_RULING_PAGES = 'http://data.rechtspraak.nl/uitspraken/zoeken'
 URL_RULING = ''
 METADATA_FILEPATH = 'data/rulings_metadata.csv'
@@ -17,25 +21,27 @@ NUMBER_OF_ARTICLES_PAGE = 1000
 def get_data(*args, **kwargs):
 
 	rulings = pandas.read_csv(METADATA_FILEPATH, sep=';', index_col='id', encoding='utf-8')
-	files = [os.path.splitext(name)[0] for path, subdirs, files in os.walk('data/') for name in files if '.txt' in name]
+	files = [os.path.splitext(name)[0] for path, subdirs, files in os.walk(DATA_PATH) for name in files if '.txt' in name]
 
 	for index in set(rulings.index.unique()) - set(files):
+
+		print("Fetching ruling with id", index)
 
 		r = rechtspraak.Ruling()
 
 		try:
 			r.load(index)
-		except Exception:
-			continue
 
-		dirpath = os.path.join('data', str(datetime.datetime.strptime(r.date, "%Y-%m-%d").year)) # 2014-04-23
+			dirpath = os.path.join(DATA_PATH, str(datetime.datetime.strptime(r.date, "%Y-%m-%d").year)) # 2014-04-23
 
-		if not os.path.isdir(dirpath):
-		   os.makedirs(dirpath)
+			if not os.path.isdir(dirpath):
+			   os.makedirs(dirpath)
 
-		with open(os.path.join(dirpath, '%s.txt' % index), "wb") as ruling_xml:
-			ruling_xml.write(r.raw)
-			print 'Fetched ruling %s' % index
+			with open(os.path.join(dirpath, '%s.txt' % index), "wb") as ruling_xml:
+				ruling_xml.write(r.raw)
+
+		except Exception as err:
+			print('An error occured:', err)
 
 def get_metadata(from_ruling=0, *args, **kwargs):
 
@@ -54,7 +60,7 @@ def get_metadata(from_ruling=0, *args, **kwargs):
 			r = requests.get(URL_RULING_PAGES, params=param_dict)
 			r.raise_for_status()
 		except Expection:
-			print 'An error with the HTTP request.'
+			print('An error with the HTTP request.')
 			continue
 
 		soup = bs4.BeautifulSoup(r.text)
@@ -73,8 +79,11 @@ def get_metadata(from_ruling=0, *args, **kwargs):
 
 		if court_rulings_batch.empty:
 
-			print 'Terminate scraping of data.'
+			print('Terminate scraping of data.')
 			terminate = True #False
+
+			if not os.path.isdir(DATA_PATH):
+			   os.makedirs(DATA_PATH)
 
 			court_rulings.to_csv(METADATA_FILEPATH, sep=';', quoting=1, encoding='utf-8', index=False)
 
@@ -94,7 +103,7 @@ if __name__ == '__main__':
 		get_data()
 
 	else:
-		print 'Unknown input argument.'
+		print('Unknown input argument.')
 
 
 	
