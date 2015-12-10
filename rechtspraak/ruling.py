@@ -27,6 +27,15 @@ class Ruling(object):
 
 		self.raw = None
 
+		self.x = 't'
+
+	def __setattr__(self, name, value):
+
+		# print name
+		# print value
+		# self.__dict__[name] = value
+		super(Ruling, self).__setattr__(name, value)
+
 	def load(self, path_or_id=None):
 
 		if path_or_id is not None and os.path.exists(path_or_id):
@@ -56,21 +65,30 @@ class Ruling(object):
 
 		soup = bs4.BeautifulSoup(html)
 
-		self.identifier = soup.find('dcterms:identifier').text
-		# self.modified = soup.find('dcterms:modified').text
-		# self.issued = soup.find('dcterms:issued').text
-		# self.publisher = soup.find('dcterms:publisher').text
-		# self.language = soup.find('dcterms:language').text
-		# self.creator = soup.find('dcterms:creator').text
-		self.date = soup.find('dcterms:date').text
-		# self.type = soup.find('dcterms:type').text
-		# self.procedure = soup.find('psi:procedure').text
-		# self.coverage = soup.find('dcterms:coverage').text
-		# self.spatial = soup.find('dcterms:spatial').text
-		# self.subject = soup.find('dcterms:subject').text
-		self.relation = soup.find('dcterms:relation').text
-		self.inhoudsindicatie = soup.find('inhoudsindicatie').text
-		self.parablock = soup.find('parablock').text
+		tags = {
+			'identifier':'dcterms:identifier',
+			'modified':'dcterms:modified',
+			'issued':'dcterms:issued',
+			'publisher':'dcterms:publisher',
+			'language':'dcterms:language',
+			'creator':'dcterms:creator',
+			'date':'dcterms:date',
+			'type':'dcterms:type',
+			'procedure':'psi:procedure',
+			'coverage':'dcterms:coverage',
+			'spatial':'dcterms:spatial',
+			'subject':'dcterms:subject',
+			'relation':'dcterms:relation',
+			'inhoudsindicatie':'inhoudsindicatie',
+			'parablock':'parablock'
+		}
+
+		for key, value in tags.iteritems():
+
+			soup_value = soup.find(value)
+
+			if soup_value is not None:
+				self.__dict__[key] = soup_value.text
 
 		# Raw data
 		self.raw = html
@@ -78,6 +96,7 @@ class Ruling(object):
 # r = Ruling('ECLI:NL:HR:2011:BT7545')
 # r.load()
 # print r.raw
+# print r.issued
 
 
 
