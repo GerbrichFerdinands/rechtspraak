@@ -23,7 +23,10 @@ def get_data(*args, **kwargs):
 	rulings = pandas.read_csv(METADATA_FILEPATH, sep=';', index_col='id', encoding='utf-8')
 	files = [os.path.splitext(name)[0] for path, subdirs, files in os.walk(DATA_PATH) for name in files if '.txt' in name]
 
-	for index in set(rulings.index.unique()) - set(files):
+	open_ids = set(rulings.index.unique()) - set(files)
+	print("Number of open rulings: ", len(open_ids))
+
+	for index in open_ids:
 
 		print("Fetching ruling with id", index)
 
