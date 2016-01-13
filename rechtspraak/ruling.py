@@ -3,6 +3,7 @@ import bs4
 import requests
 
 import os
+import re
 
 class Ruling(object):
 
@@ -39,14 +40,15 @@ class Ruling(object):
 	def load(self, path_or_id=None):
 
 		if path_or_id is not None and os.path.exists(path_or_id):
-			self._from_file(path_or_id)
-			return
+			xml = self._from_file(path_or_id)
+		else:
+			xml = self._from_web(path_or_id)
 
-		self._from_web(path_or_id)
+		self._parse(xml)
 	
 	def _from_file(self, path):
 
-		with open(path, "wb") as ruling_xml:
+		with open(path, "r") as ruling_xml:
 			return ruling_xml.read()
 
 	def _from_web(self, identifier=None):
@@ -59,7 +61,7 @@ class Ruling(object):
 		r = requests.get(url, params=param_dict)
 		r.raise_for_status()
 
-		return self._parse(r.text.encode('utf-8'))
+		return r.text.encode('utf-8')
 
 	def _parse(self,html):
 
@@ -93,10 +95,43 @@ class Ruling(object):
 		# Raw data
 		self.raw = html
 
-# r = Ruling('ECLI:NL:HR:2011:BT7545')
-# r.load()
-# print r.raw
-# print r.issued
+	def articles(self):
+
+		art = {
+			'wegenverkeerswet':[],
+			'strafrecht':[],
+			}
+
+		if self.raw is not None:
+
+			subsentences_verkeer = []
+
+			# Wegenverkeerswet
+			subsentences_verkeer = subsentences_verkeer + re.findall(r'artikel (.*?) van de Wegenverkeerswet', self.raw, re.IGNORECASE)
+			subsentences_verkeer = subsentences_verkeer + re.findall(r'Wegenverkeerswet 1994 art\. (.*?)[\.<]', self.raw, re.IGNORECASE) 
+
+			for sub in subsentences_verkeer:
+
+				art['wegenverkeerswet'] = art['wegenverkeerswet'] + re.split(', | en ', sub)
+
+
+
+			subsentences_straf = []
+
+			# Wetboek van strafrecht
+			subsentences_straf = subsentences_straf + re.findall(r'Wetboek van Strafrecht art\. (.*?)[\.<]', self.raw, re.IGNORECASE) 
+
+			for sub in subsentences_straf:
+
+				art['strafrecht'] = art['strafrecht'] + re.split(', | en ', sub)
+
+		# Drop duplicates
+		for key in art.keys():
+			art[key] = list(set(art[key]))
+
+		return art
+
+
 
 
 
